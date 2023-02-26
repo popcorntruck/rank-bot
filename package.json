@@ -1,0 +1,19 @@
+{
+  "name": "rank-bot",
+  "version": "0.0.0",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20230221.0",
+    "discord-api-types": "^0.37.35",
+    "typescript": "^4.9.5",
+    "wrangler": "2.11.1"
+  },
+  "private": true,
+  "scripts": {
+    "start": "wrangler dev",
+    "deploy": "wrangler publish"
+  },
+  "dependencies": {
+    "discord-interactions": "^3.3.0",
+    "zod": "^3.20.6"
+  }
+}
