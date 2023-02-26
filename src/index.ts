@@ -153,6 +153,7 @@ export default {
       interaction.type === InteractionType.ApplicationCommand &&
       interaction.data.type === ApplicationCommandType.ChatInput
     ) {
+      //this does the same thing no matter what command is used, should make commands syste m
       const riotId = interaction.data.options?.find(
         ({ name }) => name === "riotid"
       );
