@@ -88,6 +88,13 @@ export default {
     }
 
     if (request.method === "PATCH") {
+      const key = request.headers.get("Authorization");
+
+      if (key !== envData.data.DISCORD_PUBKEY) {
+        return new Response("Invalid auth", {
+          status: 401,
+        });
+      }
       //sync command
       const rankCommandData: RESTPostAPIApplicationCommandsJSONBody = {
         type: ApplicationCommandType.ChatInput,
@@ -121,7 +128,9 @@ export default {
         }
       );
 
-      return new Response(JSON.stringify(res.ok));
+      return json({
+        success: res.ok,
+      });
     }
 
     const reqHeaders = signatureSchema.safeParse({
@@ -148,11 +157,9 @@ export default {
     const interaction = JSON.parse(body) as APIInteraction;
 
     if (interaction.type === InteractionType.Ping) {
-      const res: APIInteractionResponse = {
+      return json<APIInteractionResponse>({
         type: InteractionResponseType.Pong,
-      };
-
-      return json(res);
+      });
     } else if (
       interaction.type === InteractionType.ApplicationCommand &&
       interaction.data.type === ApplicationCommandType.ChatInput
@@ -170,14 +177,12 @@ export default {
             .filter((v) => v !== "");
 
           if (split.length !== 2) {
-            const res: APIInteractionResponse = {
+            return json<APIInteractionResponse>({
               type: InteractionResponseType.ChannelMessageWithSource,
               data: {
                 content: "Invalid Riot ID",
               },
-            };
-
-            return json(res);
+            });
           }
 
           const [name, tagline] = split;
@@ -205,17 +210,14 @@ export default {
           }>();
 
           if (!vJson["data"] || vJson.data.riotAccount === null) {
-            const res: APIInteractionResponse = {
+            return json<APIInteractionResponse>({
               type: InteractionResponseType.ChannelMessageWithSource,
               data: {
                 content: "Failed to fetch user data",
               },
-            };
-
-            return json(res);
+            });
           }
-
-          const res: APIInteractionResponse = {
+          return json<APIInteractionResponse>({
             type: InteractionResponseType.ChannelMessageWithSource,
             data: {
               content: `${name}#${tagline}'s rank: ${
@@ -223,12 +225,10 @@ export default {
                 "Unknown"
               }`,
             },
-          };
-
-          return json(res);
+          });
         }
       } else if (interaction.data.name === "about") {
-        const res: APIInteractionResponse = {
+        return json<APIInteractionResponse>({
           type: InteractionResponseType.ChannelMessageWithSource,
           data: {
             embeds: [
@@ -239,9 +239,7 @@ export default {
               },
             ],
           },
-        };
-
-        return json(res);
+        });
       }
     }
 
@@ -251,10 +249,14 @@ export default {
   },
 };
 
-function json(data: unknown): Response {
+function json<TData = unknown>(
+  data: TData,
+  params?: ConstructorParameters<typeof Response>[1]
+): Response {
   return new Response(JSON.stringify(data, null, 2), {
     headers: {
       "content-type": "application/json;charset=UTF-8",
     },
+    ...params,
   });
 }
