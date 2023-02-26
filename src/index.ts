@@ -89,7 +89,7 @@ export default {
 
     if (request.method === "PATCH") {
       //sync command
-      const commandData: RESTPostAPIApplicationCommandsJSONBody = {
+      const rankCommandData: RESTPostAPIApplicationCommandsJSONBody = {
         type: ApplicationCommandType.ChatInput,
         name: "rank",
         description: "Get the user's rank from their Riot ID",
@@ -103,11 +103,17 @@ export default {
         ],
       };
 
+      const aboutCommandData: RESTPostAPIApplicationCommandsJSONBody = {
+        type: ApplicationCommandType.ChatInput,
+        name: "about",
+        description: "About this bot",
+      };
+
       const res = await fetch(
         `https://discord.com/api/v10/applications/${envData.data.DISCORD_APPID}/commands`,
         {
           method: "PUT",
-          body: JSON.stringify([commandData]),
+          body: JSON.stringify([rankCommandData, aboutCommandData]),
           headers: {
             "Content-Type": "application/json",
             Authorization: "Bot " + envData.data.DISCORD_TOKEN,
@@ -151,70 +157,87 @@ export default {
       interaction.type === InteractionType.ApplicationCommand &&
       interaction.data.type === ApplicationCommandType.ChatInput
     ) {
-      //this does the same thing no matter what command is used, should make commands syste m
-      const riotId = interaction.data.options?.find(
-        ({ name }) => name === "riotid"
-      );
-
-      if (riotId && riotId.type === ApplicationCommandOptionType.String) {
-        const split = riotId.value
-          .replace(/\s/g, "")
-          .split("#")
-          .filter((v) => v !== "");
-
-        if (split.length !== 2) {
-          const res: APIInteractionResponse = {
-            type: InteractionResponseType.ChannelMessageWithSource,
-            data: {
-              content: "Invalid Riot ID",
-            },
-          };
-
-          return json(res);
-        }
-
-        const [name, tagline] = split;
-
-        const vData = await fetch(
-          encodeURI(
-            `${TRACKER_URL}?query=${RIOT_ACCOUNT_QUERY}&variables=${JSON.stringify(
-              {
-                gameName: name,
-                tagLine: tagline,
-              }
-            )}`
-          )
+      if (interaction.data.name === "rank") {
+        //this does the same thing no matter what command is used, should make commands syste m
+        const riotId = interaction.data.options?.find(
+          ({ name }) => name === "riotid"
         );
 
-        const vJson = await vData.json<{
-          errors: any;
-          data: {
-            riotAccount: {
-              valorantProfile: {
-                latestTier: number;
-              };
-            } | null;
-          };
-        }>();
+        if (riotId && riotId.type === ApplicationCommandOptionType.String) {
+          const split = riotId.value
+            .replace(/\s/g, "")
+            .split("#")
+            .filter((v) => v !== "");
 
-        if (!vJson["data"] || vJson.data.riotAccount === null) {
+          if (split.length !== 2) {
+            const res: APIInteractionResponse = {
+              type: InteractionResponseType.ChannelMessageWithSource,
+              data: {
+                content: "Invalid Riot ID",
+              },
+            };
+
+            return json(res);
+          }
+
+          const [name, tagline] = split;
+
+          const vData = await fetch(
+            encodeURI(
+              `${TRACKER_URL}?query=${RIOT_ACCOUNT_QUERY}&variables=${JSON.stringify(
+                {
+                  gameName: name,
+                  tagLine: tagline,
+                }
+              )}`
+            )
+          );
+
+          const vJson = await vData.json<{
+            errors: any;
+            data: {
+              riotAccount: {
+                valorantProfile: {
+                  latestTier: number;
+                };
+              } | null;
+            };
+          }>();
+
+          if (!vJson["data"] || vJson.data.riotAccount === null) {
+            const res: APIInteractionResponse = {
+              type: InteractionResponseType.ChannelMessageWithSource,
+              data: {
+                content: "Failed to fetch user data",
+              },
+            };
+
+            return json(res);
+          }
+
           const res: APIInteractionResponse = {
             type: InteractionResponseType.ChannelMessageWithSource,
             data: {
-              content: "Failed to fetch user data",
+              content: `${name}#${tagline}'s rank: ${
+                V_RANK_MAP[vJson.data.riotAccount.valorantProfile.latestTier] ||
+                "Unknown"
+              }`,
             },
           };
 
           return json(res);
         }
-
+      } else if (interaction.data.name === "about") {
         const res: APIInteractionResponse = {
           type: InteractionResponseType.ChannelMessageWithSource,
           data: {
-            content: `${name}#${tagline}'s rank: ${
-              V_RANK_MAP[vJson.data.riotAccount.valorantProfile.latestTier] ||
-              "Unknown"
-            }`,
+            embeds: [
+              {
+                title: "Rank Bot",
+                description: "This bot is really bad i made it in 40 minutes",
+                url: "https://github.com/popcorntruck/rank-bot",
+              },
+            ],
           },
         };
 
