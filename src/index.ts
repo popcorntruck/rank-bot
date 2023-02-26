@@ -14,11 +14,9 @@ import {
   InteractionType,
   APIInteractionResponse,
   InteractionResponseType,
-  APIApplicationCommand,
   ApplicationCommandType,
   ApplicationCommandOptionType,
   RESTPostAPIApplicationCommandsJSONBody,
-  APIApplicationCommandInteractionDataStringOption,
 } from "discord-api-types/v10";
 export interface Env {
   DISCORD_TOKEN?: string | null;
@@ -159,7 +157,11 @@ export default {
       );
 
       if (riotId && riotId.type === ApplicationCommandOptionType.String) {
-        const split = riotId.value.split("#").filter((v) => v !== "");
+        const split = riotId.value
+          .replace(/\s/g, "")
+          .split("#")
+          .filter((v) => v !== "");
+
         if (split.length !== 2) {
           const res: APIInteractionResponse = {
             type: InteractionResponseType.ChannelMessageWithSource,
