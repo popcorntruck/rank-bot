@@ -172,7 +172,7 @@ export default {
 
         if (riotId && riotId.type === ApplicationCommandOptionType.String) {
           const split = riotId.value
-            .replace(/\s/g, "")
+            .trim()
             .split("#")
             .filter((v) => v !== "");
 
